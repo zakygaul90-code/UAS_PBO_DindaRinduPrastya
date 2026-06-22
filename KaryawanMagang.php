@@ -22,7 +22,10 @@ class KaryawanMagang extends Karyawan {
     // Implementasi hitungGajiBersih untuk Karyawan Magang
     // Rumus: (Hari Kerja Masuk * Gaji Dasar per Hari) + Uang Saku Bulanan Tetap
     public function hitungGajiBersih() {
-        return ($this->hariKerjaMasuk * $this->gajiDasarperHari) + $this->uangSakuBulanan;
+        $gajiKotor = $this->hariKerjaMasuk * $this->gajiDasarperHari;
+        $gajiBersih = $gajiKotor * 0.80;
+        
+        return $gajiBersih;
     }
 
     // Implementasi tampilkanProfilKaryawan

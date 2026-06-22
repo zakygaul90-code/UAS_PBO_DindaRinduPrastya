@@ -19,8 +19,7 @@ class KaryawanTetap extends Karyawan {
     public function getOpsiSahamId() { return $this->opsiSahamId; }
     public function setOpsiSahamId($sahamId) { $this->opsiSahamId = $sahamId; }
 
-    // Implementasi hitungGajiBersih untuk Karyawan Tetap
-    // Rumus: (Hari Kerja Masuk * Gaji Dasar per Hari) + Tunjangan Kesehatan
+    // Implementasi polimorfisme Tahap 5
     public function hitungGajiBersih() {
         return ($this->hariKerjaMasuk * $this->gajiDasarperHari) + $this->tunjanganKesehatan;
     }

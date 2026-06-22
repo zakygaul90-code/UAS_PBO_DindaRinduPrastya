@@ -20,8 +20,7 @@ class KaryawanKontrak extends Karyawan {
     public function getAgensiPenyalur() { return $this->agensiPenyalur; }
     public function setAgensiPenyalur($agensi) { $this->agensiPenyalur = $agensi; }
 
-    // Implementasi hitungGajiBersih untuk Karyawan Kontrak
-    // Rumus: Hari Kerja Masuk * Gaji Dasar per Hari
+    // Tahap 5 Implementasi Polimorfisme
     public function hitungGajiBersih() {
         return $this->hariKerjaMasuk * $this->gajiDasarperHari;
     }
