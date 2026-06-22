@@ -1,23 +1,127 @@
 <?php
-// Mengimport koneksi database dan kelas-kelas OOP
-require_once 'koneksi.php';
-require_once 'Karyawan.php';
-require_once 'KaryawanTetap.php';
-require_once 'KaryawanKontrak.php';
-require_once 'KaryawanMagang.php';
+// ==========================================
+// 1. KONFIGURASI KONEKSI DATABASE
+// ==========================================
+$host = 'localhost';
+$user = 'root';
+$pass = ''; 
+$db   = 'db_uas_pbo_ti1c_dindarinduprastya'; 
+$charset = 'utf8mb4';
 
-// Array penampung untuk mengelompokkan objek karyawan berdasarkan jenisnya
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+     $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+     die("Koneksi database gagal: " . $e->getMessage());
+}
+
+// ==========================================
+// 2. STRUKTUR OOP (ABSTRACT CLASS & INHERITANCE)
+// ==========================================
+
+abstract class Karyawan {
+    protected $idKaryawan;
+    protected $namaKaryawan;
+    protected $departemen;
+    protected $hariKerjaMasuk;
+    protected $gajiDasarperHari;
+
+    public function __construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari) {
+        $this->idKaryawan = $idKaryawan;
+        $this->namaKaryawan = $namaKaryawan;
+        $this->departemen = $departemen;
+        $this->hariKerjaMasuk = $hariKerjaMasuk;
+        $this->gajiDasarperHari = $gajiDasarperHari;
+    }
+
+    // Deklarasi method abstract yang WAJIB di-override oleh kelas anak
+    abstract public function hitungGajiBersih();
+
+    public function getIdKaryawan() { return $this->idKaryawan; }
+    public function getNamaKaryawan() { return $this->namaKaryawan; }
+    public function getDepartemen() { return $this->departemen; }
+    public function getHariKerjaMasuk() { return $this->hariKerjaMasuk; }
+    public function getGajiDasarperHari() { return $this->gajiDasarperHari; }
+}
+
+// KELAS ANAK: KARYAWAN TETAP
+class KaryawanTetap extends Karyawan {
+    private $tunjanganKesehatan;
+    private $opsiSahamId;
+
+    public function __construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari, $tunjanganKesehatan, $opsiSahamId) {
+        parent::__construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari);
+        $this->tunjanganKesehatan = $tunjanganKesehatan;
+        $this->opsiSahamId = $opsiSahamId;
+    }
+
+    // METHOD OVERRIDING (Rumus Tetap)
+    public function hitungGajiBersih() {
+        return ($this->hariKerjaMasuk * $this->gajiDasarperHari) + $this->tunjanganKesehatan;
+    }
+
+    public function getTunjanganKesehatan() { return $this->tunjanganKesehatan; }
+    public function getOpsiSahamId() { return $this->opsiSahamId; }
+}
+
+// KELAS ANAK: KARYAWAN KONTRAK
+class KaryawanKontrak extends Karyawan {
+    private $durasiKontrakBulan;
+    private $agensiPenyalur;
+
+    public function __construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari, $durasiKontrakBulan, $agensiPenyalur) {
+        parent::__construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari);
+        $this->durasiKontrakBulan = $durasiKontrakBulan;
+        $this->agensiPenyalur = $agensiPenyalur;
+    }
+
+    // METHOD OVERRIDING (Rumus Kontrak murni harian)
+    public function hitungGajiBersih() {
+        return $this->hariKerjaMasuk * $this->gajiDasarperHari;
+    }
+
+    public function getDurasiKontrakBulan() { return $this->durasiKontrakBulan; }
+    public function getAgensiPenyalur() { return $this->agensiPenyalur; }
+}
+
+// KELAS ANAK: KARYAWAN MAGANG
+class KaryawanMagang extends Karyawan {
+    private $uangSakuBulanan;
+    private $sertifikatKampusMerdeka;
+
+    public function __construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari, $uangSakuBulanan, $sertifikatKampusMerdeka) {
+        parent::__construct($idKaryawan, $namaKaryawan, $departemen, $hariKerjaMasuk, $gajiDasarperHari);
+        $this->uangSakuBulanan = $uangSakuBulanan;
+        $this->sertifikatKampusMerdeka = $sertifikatKampusMerdeka;
+    }
+
+    // METHOD OVERRIDING (Rumus Magang baru dengan pengali 0.80)
+    public function hitungGajiBersih() {
+        return ($this->hariKerjaMasuk * $this->gajiDasarperHari) * 0.80;
+    }
+
+    public function getUangSakuBulanan() { return $this->uangSakuBulanan; }
+    public function getSertifikatKampusMerdeka() { return $this->sertifikatKampusMerdeka; }
+}
+
+// ==========================================
+// 3. PROSES AMBIL DATA & INSTANSIASI OBJEK
+// ==========================================
 $daftarKaryawanTetap = [];
 $daftarKaryawanKontrak = [];
 $daftarKaryawanMagang = [];
 
 try {
-    // Mengambil seluruh data dari tabel_karyawan
-    $query = "SELECT * FROM tabel_karyawan";
+    $query = "SELECT * FROM tabel_karyawan"; 
     $stmt = $pdo->query($query);
     
     while ($row = $stmt->fetch()) {
-        // Polimorfisme: Instansiasi objek berdasarkan 'jenis_karyawan' dari database
         if ($row['jenis_karyawan'] === 'tetap') {
             $daftarKaryawanTetap[] = new KaryawanTetap(
                 $row['id_karyawan'], $row['nama_karyawan'], $row['departemen'], 
@@ -31,8 +135,6 @@ try {
                 $row['durasi_kontrak_bulan'], $row['agensi_penyalur']
             );
         } elseif ($row['jenis_karyawan'] === 'magang') {
-            // Catatan: Properti uangSakuBulanan tidak lagi dipakai di hitungGaji() terbaru Anda, 
-            // namun tetap dilewatkan ke constructor jika kelas memintanya.
             $daftarKaryawanMagang[] = new KaryawanMagang(
                 $row['id_karyawan'], $row['nama_karyawan'], $row['departemen'], 
                 $row['hari_kerja_masuk'], $row['gaji_dasar_per_hari'], 
@@ -50,7 +152,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Data & Slip Gaji Karyawan</title>
+    <title>Sistem Manajemen Karyawan</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -62,7 +164,6 @@ try {
         
         <header class="text-center md:text-left border-b border-gray-300 pb-6">
             <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">DASHBOARD DATA KARYAWAN PERUSAHAAN</h1>
-            <p class="text-sm text-gray-500 mt-1">Sistem informasi penggajian terintegrasi berbasis Object-Oriented Programming (OOP)</p>
         </header>
 
         <section class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
@@ -76,7 +177,7 @@ try {
                             <th class="px-6 py-3">ID & Nama</th>
                             <th class="px-6 py-3">Departemen</th>
                             <th class="px-6 py-3 text-center">Hari Kerja</th>
-                            <th class="px-6 py-3">Spesifikasi Hak Atribut (Tetap)</th>
+                            <th class="px-6 py-3">Spesifikasi Hak Atribut</th>
                             <th class="px-6 py-3 text-right">Total Gaji Diterima</th>
                         </tr>
                     </thead>
@@ -120,7 +221,7 @@ try {
                             <th class="px-6 py-3">ID & Nama</th>
                             <th class="px-6 py-3">Departemen</th>
                             <th class="px-6 py-3 text-center">Hari Kerja</th>
-                            <th class="px-6 py-3">Spesifikasi Hubungan Kerja (Kontrak)</th>
+                            <th class="px-6 py-3">Spesifikasi Hubungan Kerja</th>
                             <th class="px-6 py-3 text-right">Total Gaji Diterima</th>
                         </tr>
                     </thead>
@@ -164,7 +265,7 @@ try {
                             <th class="px-6 py-3">ID & Nama</th>
                             <th class="px-6 py-3">Departemen</th>
                             <th class="px-6 py-3 text-center">Hari Kerja</th>
-                            <th class="px-6 py-3">Spesifikasi Program Belajar (Magang)</th>
+                            <th class="px-6 py-3">Spesifikasi Program Belajar</th>
                             <th class="px-6 py-3 text-right">Total Gaji Diterima</th>
                         </tr>
                     </thead>
@@ -180,7 +281,7 @@ try {
                                 <td class="px-6 py-4 text-gray-500"><?= $k->getDepartemen(); ?></td>
                                 <td class="px-6 py-4 text-center font-semibold"><?= $k->getHariKerjaMasuk(); ?> hari</td>
                                 <td class="px-6 py-4 space-y-1">
-                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-md font-medium max-w-xs truncate" title="<?= $k->getSertifikatKampusMerdeka(); ?>">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-md font-medium">
                                         <?= $k->getSertifikatKampusMerdeka() ?: 'Program Reguler'; ?>
                                     </span>
                                     <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md font-medium">
